@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="찾아가는 AED 로봇 Beat — 응급환자를 스스로 감지해 현장으로 달려가는 자율주행 AED 로보틱스">
+  <title>Beat — 찾아가는 AED 로봇</title>
+<style>
+  html, body { margin: 0; padding: 0; }
+  :root {
+    --ground: #FCFCFD;
+    --ground-soft: #F4F5F8;
+    --ink: #17191E;
+    --muted: #6E6B73;
+    --line: #E6E7EC;
+    --accent: #E11D2E;
+    --accent-ink: #B01522;
+    --maxw: 760px;
+    --font-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  .page {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.7;
+    letter-spacing: -0.006em;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* ---------- top navigation ---------- */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px 20px;
+    flex-wrap: wrap;
+    padding: 13px clamp(18px, 4vw, 34px);
+    background: rgba(252, 252, 253, 0.82);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
+    color: var(--ink);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    font-family: inherit;
+  }
+  .wordmark {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .pulse-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.4s ease-in-out infinite;
+    flex: none;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    45% { transform: scale(1.9); opacity: 0.35; }
+  }
+
+  .nav-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .navbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 13px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .navbtn svg { width: 17px; height: 17px; flex: none; }
+  .navbtn:hover { background: var(--accent-ink); transform: translateY(-1px); }
+  .navbtn:focus-visible { outline: 3px solid rgba(225, 29, 46, 0.4); outline-offset: 2px; }
+  .navbtn.active {
+    background: var(--accent-ink);
+    box-shadow: 0 0 0 3px rgba(225, 29, 46, 0.22);
+  }
+
+  /* ---------- views ---------- */
+  main { flex: 1 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; animation: viewIn 0.5s ease both; }
+  @keyframes viewIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+  .view-inner { padding: clamp(52px, 9vh, 104px) 0; }
+
+  /* ---------- shared type ---------- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+  .eyebrow.muted { color: var(--muted); }
+
+  h2.section-title {
+    font-size: clamp(1.55rem, 4.4vw, 2.2rem);
+    font-weight: 750;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 0.7rem 0 0;
+  }
+
+  p.lead {
+    font-size: clamp(1.08rem, 2.4vw, 1.28rem);
+    color: var(--muted);
+    line-height: 1.65;
+    max-width: 60ch;
+    margin: 1.1rem 0 0;
+  }
+
+  /* ---------- hero (home) ---------- */
+  .hero {
+    padding: clamp(56px, 12vh, 120px) 0 clamp(48px, 9vh, 90px);
+  }
+  .hero h1 {
+    font-size: clamp(2.7rem, 8.5vw, 5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    margin: 0.9rem 0 0;
+    text-wrap: balance;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero-sub {
+    font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+    color: var(--muted);
+    max-width: 46ch;
+    margin: 1.4rem 0 0;
+    line-height: 1.6;
+  }
+  .ecg {
+    margin-top: clamp(40px, 7vh, 64px);
+    width: 100%;
+    height: 110px;
+    display: block;
+  }
+  .ecg-caption {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .hero-hint {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: clamp(36px, 6vh, 56px) 0 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--ground-soft);
+  }
+  .hero-hint b { color: var(--accent); font-weight: 700; }
+
+  /* big call-to-action buttons in hero */
+  .cta-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: clamp(44px, 7vh, 68px) 0 14px;
+  }
+  .hero-cta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .bigbtn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 22px 22px 24px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .bigbtn:hover { background: var(--accent-ink); transform: translateY(-2px); box-shadow: 0 12px 26px rgba(225, 29, 46, 0.22); }
+  .bigbtn:focus-visible { outline: 3px solid rgba(225, 29, 46, 0.4); outline-offset: 3px; }
+  .bigbtn svg { width: 26px; height: 26px; margin-bottom: 6px; }
+  .bb-label { font-size: 1.1rem; font-weight: 720; letter-spacing: -0.02em; }
+  .bb-sub { font-size: 0.85rem; line-height: 1.45; font-weight: 500; color: rgba(255, 255, 255, 0.88); }
+  .bb-go { margin-top: 6px; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.9); }
+
+  /* back-to-home button on section pages */
+  .backbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 8px 15px 8px 12px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: clamp(24px, 4vh, 36px);
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+  .backbtn:hover { color: var(--accent); border-color: var(--accent); background: var(--ground-soft); }
+  .backbtn:focus-visible { outline: 3px solid rgba(225, 29, 46, 0.35); outline-offset: 2px; }
+  .backbtn svg { width: 15px; height: 15px; }
+
+  /* ---------- problems ---------- */
+  .problems {
+    list-style: none;
+    padding: 0;
+    margin: clamp(36px, 6vh, 56px) 0 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .problems li {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 18px;
+    padding: 26px 0;
+    border-top: 1px solid var(--line);
+  }
+  .problems li:last-child { border-bottom: 1px solid var(--line); }
+  .p-icon { display: flex; align-items: flex-start; padding-top: 2px; }
+  .p-icon svg { width: 42px; height: 42px; overflow: visible; }
+  .p-title {
+    font-size: 1.12rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .p-desc {
+    color: var(--muted);
+    margin: 6px 0 0;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  /* ---------- solution ---------- */
+  .solution-statement {
+    font-size: clamp(1.5rem, 4.6vw, 2.35rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.35;
+    text-wrap: balance;
+    margin: clamp(28px, 5vh, 44px) 0 0;
+  }
+  .solution-statement b {
+    color: var(--accent);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* ---------- functions ---------- */
+  .functions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: clamp(36px, 6vh, 56px);
+  }
+  .fn {
+    background: var(--ground);
+    padding: 30px 28px 34px;
+    display: flex;
+    flex-direction: column;
+  }
+  .fn-num {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .fn-title {
+    font-size: 1.16rem;
+    font-weight: 720;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+    margin: 18px 0 0;
+    text-wrap: balance;
+  }
+  .fn-desc {
+    color: var(--muted);
+    font-size: 0.98rem;
+    line-height: 1.6;
+    margin: 10px 0 0;
+  }
+  .fn-tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    background: var(--ground-soft);
+    border: 1px solid var(--line);
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 18px;
+    align-self: flex-start;
+  }
+
+  /* ---------- illustrations ---------- */
+  .ln { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ln-acc { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ln-soft { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.45; }
+  .dot-node { fill: var(--ground); stroke: var(--ink); stroke-width: 1.6; }
+  .dot-acc { fill: var(--accent); stroke: none; }
+  .fill-ground { fill: var(--ground); }
+
+  .fn-viz {
+    height: 92px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+  }
+  .fn-viz svg { height: 84px; width: auto; max-width: 100%; overflow: visible; }
+
+  /* ---------- closing (inside how-it-works) ---------- */
+  .closing {
+    text-align: center;
+    margin-top: clamp(56px, 9vh, 96px);
+    padding-top: clamp(48px, 8vh, 80px);
+    border-top: 1px solid var(--line);
+  }
+  .closing h2 {
+    font-size: clamp(1.7rem, 5vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+    text-wrap: balance;
+    margin: 0.8rem 0 0;
+  }
+  .closing p {
+    color: var(--muted);
+    max-width: 42ch;
+    margin: 1.2rem auto 0;
+    font-size: 1.06rem;
+  }
+
+  /* ---------- combined-page divider ---------- */
+  .combo-sec {
+    margin-top: clamp(60px, 10vh, 104px);
+    padding-top: clamp(44px, 7vh, 72px);
+    border-top: 1px solid var(--line);
+  }
+
+  /* ---------- product page ---------- */
+  .product-viz {
+    display: flex;
+    justify-content: center;
+    margin: clamp(32px, 6vh, 52px) 0 0;
+    padding: clamp(26px, 4vh, 44px);
+    background: var(--ground-soft);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+  }
+  .product-viz svg { width: 100%; max-width: 260px; height: auto; overflow: visible; }
+
+  .spec-wrap { overflow-x: auto; margin-top: clamp(26px, 4vh, 44px); }
+  .spectable { width: 100%; border-collapse: collapse; }
+  .spectable th, .spectable td {
+    text-align: left;
+    padding: 15px 6px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+  .spectable th {
+    width: 36%;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .spectable td { color: var(--muted); }
+  .spectable tr:first-child th, .spectable tr:first-child td { border-top: 1px solid var(--line); }
+  .spec-na { color: var(--accent); font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.04em; }
+
+  /* ---------- footer ---------- */
+  .sitefoot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 30px 20px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  @media (max-width: 620px) {
+    .hero-cta { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .functions { grid-template-columns: 1fr; }
+    .problems li { grid-template-columns: 40px 1fr; gap: 12px; }
+    .nav-btns { width: 100%; }
+    .navbtn { flex: 1 1 auto; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-dot { animation: none; }
+    .view.active { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- TOP NAV — 3 red round buttons -->
+  <header class="topnav">
+    <button class="brand" data-view="home" aria-label="Beat 홈으로">
+      <span class="wordmark">Beat</span>
+      <span class="pulse-dot" aria-hidden="true"></span>
+    </button>
+  </header>
+
+  <main>
+
+    <!-- HOME (main screen) -->
+    <section class="view active" id="view-home">
+      <div class="hero">
+        <div class="wrap">
+          <p class="eyebrow">Autonomous AED Robotics</p>
+          <h1>심장이 멈춘 곳으로<br><span class="accent">먼저 달려가는</span> AED.</h1>
+          <p class="hero-sub">Beat은 응급환자를 스스로 감지하고 현장까지 자율주행으로 이동하는 AED 로봇입니다. 사람이 AED를 찾는 대신, AED가 사람을 찾아갑니다.</p>
+
+          <canvas class="ecg" aria-hidden="true"></canvas>
+          <p class="ecg-caption">
+            <span>■ Live · Sinus Rhythm</span>
+            <span>72 BPM</span>
+          </p>
+
+          <p class="cta-label">더 알아보기 — 아래 버튼을 눌러보세요</p>
+          <div class="hero-cta">
+            <button class="bigbtn" data-view="problem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3 2 20h20L12 3z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="17" r="0.6" fill="#fff" stroke="none"/>
+              </svg>
+              <span class="bb-label">The Problem</span>
+              <span class="bb-sub">문제 · 솔루션 · 작동 방식 한눈에</span>
+              <span class="bb-go">자세히 보기 →</span>
+            </button>
+            <button class="bigbtn" data-view="product">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5"/><line x1="12" y1="12" x2="12" y2="22"/>
+              </svg>
+              <span class="bb-label">Product</span>
+              <span class="bb-sub">제품 사양과 구성 상세</span>
+              <span class="bb-go">자세히 보기 →</span>
+            </button>
+            <button class="bigbtn" data-view="howitworks">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><line x1="7" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="17" y2="12"/>
+              </svg>
+              <span class="bb-label">How It Works</span>
+              <span class="bb-sub">감지부터 통제까지 네 단계</span>
+              <span class="bb-go">자세히 보기 →</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE PROBLEM -->
+    <section class="view" id="view-problem">
+      <div class="view-inner">
+        <div class="wrap">
+          <button class="backbtn" data-view="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            메인으로
+          </button>
+          <p class="eyebrow muted">The Problem</p>
+          <h2 class="section-title">골든타임은 기다려주지 않습니다.</h2>
+          <p class="lead">심정지 이후 생존율은 1분마다 약 7~10%씩 떨어집니다. 그럼에도 현장의 AED는 세 가지 벽에 막혀 제 역할을 하지 못합니다.</p>
+
+          <ol class="problems">
+            <li>
+              <span class="p-icon" aria-hidden="true">
+                <svg viewBox="0 0 42 42">
+                  <circle class="ln-soft" cx="21" cy="18" r="11" stroke-dasharray="3 4"/>
+                  <path class="ln" d="M21 7c-5 0-9 3.8-9 9 0 6.4 9 16 9 16s9-9.6 9-16c0-5.2-4-9-9-9z"/>
+                  <circle class="dot-acc" cx="21" cy="16" r="3.2"/>
+                </svg>
+              </span>
+              <div>
+                <p class="p-title">눈에 띄지 않는 위치</p>
+                <p class="p-desc">대부분의 응급상황에서 AED를 제때 찾지 못해 그 사이 골든타임이 흘러갑니다.</p>
+              </div>
+            </li>
+            <li>
+              <span class="p-icon" aria-hidden="true">
+                <svg viewBox="0 0 42 42">
+                  <path class="ln fill-ground" d="M7 17h6l7-6v20l-7-6H7z"/>
+                  <path class="ln-acc" d="M26 15c2.6 2.4 2.6 10.6 0 15"/>
+                  <path class="ln-acc" d="M31 11c4.4 4.6 4.4 18 0 22" opacity="0.5"/>
+                </svg>
+              </span>
+              <div>
+                <p class="p-title">음성 안내만으로는 부족</p>
+                <p class="p-desc">직관적인 시각 피드백이 없어 사용자가 다음 행동을 망설이고, 처치가 지연됩니다.</p>
+              </div>
+            </li>
+            <li>
+              <span class="p-icon" aria-hidden="true">
+                <svg viewBox="0 0 42 42">
+                  <rect class="ln fill-ground" x="6" y="15" width="23" height="17" rx="3"/>
+                  <path class="ln-acc" d="M10 24h3l1.6-4 2.6 8 1.8-4h4"/>
+                  <circle class="ln-acc fill-ground" cx="32" cy="13" r="7"/>
+                  <line class="ln-acc" x1="32" y1="9.5" x2="32" y2="14"/>
+                  <circle class="dot-acc" cx="32" cy="17" r="1.3"/>
+                </svg>
+              </span>
+              <div>
+                <p class="p-title">써본 적 없는 장비</p>
+                <p class="p-desc">AED를 다뤄본 일반인이 드물고, 작동에 대한 잘못된 인식이 치명적인 결과로 이어집니다.</p>
+              </div>
+            </li>
+          </ol>
+
+          <!-- Solution (moved in) -->
+          <div class="combo-sec">
+            <p class="eyebrow">The Solution</p>
+            <p class="solution-statement">안전 기반 주행 기술과 시각적 스마트 요소를 하나로 묶어, <b>사람을 찾아가는 AED</b>를 만들었습니다. 위치의 문제도, 조작의 문제도 로봇이 대신 풉니다.</p>
+          </div>
+
+          <!-- How It Works (moved in) -->
+          <div class="combo-sec">
+            <p class="eyebrow muted">How It Works</p>
+            <h2 class="section-title">감지부터 현장 통제까지, 한 대로.</h2>
+            <p class="lead">응급 상황이 인식된 순간부터 Beat이 수행하는 네 단계입니다.</p>
+
+            <div class="functions">
+              <div class="fn">
+                <div class="fn-viz" aria-hidden="true">
+                  <svg viewBox="0 0 130 90">
+                    <g class="ln-acc">
+                      <path d="M6 22V10h11"/><path d="M124 22V10h-11"/>
+                      <path d="M6 68v12h11"/><path d="M124 68v12h-11"/>
+                    </g>
+                    <g class="ln">
+                      <line x1="23" y1="54" x2="30" y2="52"/>
+                      <line x1="30" y1="52" x2="48" y2="50"/>
+                      <line x1="48" y1="50" x2="68" y2="52"/>
+                      <line x1="30" y1="52" x2="34" y2="36"/>
+                      <line x1="34" y1="36" x2="28" y2="26"/>
+                      <line x1="30" y1="52" x2="36" y2="66"/>
+                      <line x1="36" y1="66" x2="32" y2="78"/>
+                      <line x1="68" y1="52" x2="88" y2="42"/>
+                      <line x1="88" y1="42" x2="104" y2="34"/>
+                      <line x1="68" y1="52" x2="90" y2="62"/>
+                      <line x1="90" y1="62" x2="106" y2="70"/>
+                    </g>
+                    <circle class="ln fill-ground" cx="18" cy="54" r="6"/>
+                    <circle class="dot-acc" cx="30" cy="52" r="3"/>
+                    <circle class="dot-acc" cx="48" cy="50" r="3"/>
+                    <circle class="dot-acc" cx="68" cy="52" r="3"/>
+                    <circle class="dot-node" cx="34" cy="36" r="2.6"/>
+                    <circle class="dot-node" cx="28" cy="26" r="2.6"/>
+                    <circle class="dot-node" cx="36" cy="66" r="2.6"/>
+                    <circle class="dot-node" cx="32" cy="78" r="2.6"/>
+                    <circle class="dot-node" cx="88" cy="42" r="2.6"/>
+                    <circle class="dot-node" cx="104" cy="34" r="2.6"/>
+                    <circle class="dot-node" cx="90" cy="62" r="2.6"/>
+                    <circle class="dot-node" cx="106" cy="70" r="2.6"/>
+                  </svg>
+                </div>
+                <span class="fn-num">01 — 감지</span>
+                <p class="fn-title">쓰러진 사람을 스스로 판단</p>
+                <p class="fn-desc">ST-GCN 기반 자세 인식으로 응급환자를 식별하고, 즉시 AED 로봇이 출동합니다.</p>
+                <span class="fn-tag">ST-GCN</span>
+              </div>
+              <div class="fn">
+                <div class="fn-viz" aria-hidden="true">
+                  <svg viewBox="0 0 130 90">
+                    <rect class="ln fill-ground" x="12" y="42" width="42" height="30" rx="7"/>
+                    <rect class="ln-acc" x="19" y="49" width="28" height="12" rx="2"/>
+                    <line class="ln" x1="22" y1="72" x2="22" y2="78"/>
+                    <line class="ln" x1="44" y1="72" x2="44" y2="78"/>
+                    <circle class="dot-node" cx="22" cy="80" r="3"/>
+                    <circle class="dot-node" cx="44" cy="80" r="3"/>
+                    <line class="ln" x1="33" y1="42" x2="33" y2="34"/>
+                    <circle class="dot-acc" cx="33" cy="32" r="2.6"/>
+                    <g class="ln-acc">
+                      <path d="M60 40a13 13 0 0 1 0 20"/>
+                      <path d="M66 34a21 21 0 0 1 0 32"/>
+                    </g>
+                    <rect class="ln fill-ground" x="84" y="22" width="34" height="34" rx="7"/>
+                    <line class="ln-acc" x1="101" y1="30" x2="101" y2="48"/>
+                    <line class="ln-acc" x1="92" y1="39" x2="110" y2="39"/>
+                  </svg>
+                </div>
+                <span class="fn-num">02 — 연계</span>
+                <p class="fn-title">출동과 동시에 원격 의료</p>
+                <p class="fn-desc">현장으로 이동하는 그 순간부터 실시간 원격 의료진과 연결해 처치를 안내합니다.</p>
+                <span class="fn-tag">Real-time Telehealth</span>
+              </div>
+              <div class="fn">
+                <div class="fn-viz" aria-hidden="true">
+                  <svg viewBox="0 0 130 90">
+                    <g class="ln-soft">
+                      <path d="M40 30a26 26 0 0 0 0 34"/>
+                      <path d="M30 22a38 38 0 0 0 0 50"/>
+                      <path d="M90 30a26 26 0 0 1 0 34"/>
+                      <path d="M100 22a38 38 0 0 1 0 50"/>
+                    </g>
+                    <path class="ln-acc" d="M65 66C50 54 42 46 42 37c0-7 5-11 11-11 5 0 9 3 12 7 3-4 7-7 12-7 6 0 11 4 11 11 0 9-8 17-23 29z"/>
+                    <path class="ln" d="M46 46h8l3-8 5 16 3-8h12"/>
+                  </svg>
+                </div>
+                <span class="fn-num">03 — 센싱</span>
+                <p class="fn-title">환자 상태를 실시간 측정</p>
+                <p class="fn-desc">AI 센싱으로 환자의 상태를 지속적으로 측정하고 확인해 정확한 판단을 돕습니다.</p>
+                <span class="fn-tag">AI Sensing</span>
+              </div>
+              <div class="fn">
+                <div class="fn-viz" aria-hidden="true">
+                  <svg viewBox="0 0 130 90">
+                    <path class="ln fill-ground" d="M12 38h9l13-10v34l-13-10h-9z"/>
+                    <g class="ln-acc">
+                      <line x1="40" y1="30" x2="96" y2="20"/>
+                      <line x1="40" y1="45" x2="100" y2="45"/>
+                      <line x1="40" y1="60" x2="96" y2="70"/>
+                    </g>
+                    <line class="ln-acc" x1="106" y1="12" x2="106" y2="78" stroke-dasharray="4 5"/>
+                    <g class="ln">
+                      <circle cx="118" cy="30" r="4"/>
+                      <line x1="118" y1="34" x2="118" y2="48"/>
+                      <circle cx="118" cy="58" r="4"/>
+                      <line x1="118" y1="62" x2="118" y2="76"/>
+                    </g>
+                  </svg>
+                </div>
+                <span class="fn-num">04 — 통제</span>
+                <p class="fn-title">현장을 안전하게 정리</p>
+                <p class="fn-desc">지향성 스피커와 레이저로 군중을 통제해 처치 공간을 확보합니다.</p>
+                <span class="fn-tag">Directional Audio · Laser</span>
+              </div>
+            </div>
+
+            <div class="closing">
+              <p class="eyebrow">Every second counts</p>
+              <h2>1초라도 먼저, Beat이 도착합니다.</h2>
+              <p>AED를 찾는 시간을 0으로. 사람을 향해 달려가는 응급 로보틱스.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCT -->
+    <section class="view" id="view-product">
+      <div class="view-inner">
+        <div class="wrap">
+          <button class="backbtn" data-view="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            메인으로
+          </button>
+          <p class="eyebrow">Product</p>
+          <h2 class="section-title">Beat 로보틱스 유닛</h2>
+          <p class="lead">응급 감지 · 자율주행 · 원격 의료 · 현장 통제를 한 대에 담은 자율주행 AED 로봇입니다. 아래는 제품의 구성과 사양입니다.</p>
+
+          <div class="product-viz" aria-hidden="true">
+            <svg viewBox="0 0 220 152">
+              <!-- antenna -->
+              <line class="ln" x1="110" y1="34" x2="110" y2="20"/>
+              <circle class="dot-acc" cx="110" cy="16" r="4"/>
+              <!-- head -->
+              <rect class="ln fill-ground" x="82" y="34" width="56" height="30" rx="9"/>
+              <circle class="dot-acc" cx="98" cy="49" r="3.6"/>
+              <circle class="dot-acc" cx="122" cy="49" r="3.6"/>
+              <!-- body -->
+              <rect class="ln fill-ground" x="64" y="70" width="92" height="56" rx="13"/>
+              <!-- AED screen with cross -->
+              <rect class="ln-acc" x="80" y="82" width="60" height="32" rx="5"/>
+              <line class="ln-acc" x1="110" y1="88" x2="110" y2="108"/>
+              <line class="ln-acc" x1="100" y1="98" x2="120" y2="98"/>
+              <!-- wheels -->
+              <line class="ln" x1="86" y1="126" x2="86" y2="136"/>
+              <line class="ln" x1="134" y1="126" x2="134" y2="136"/>
+              <circle class="dot-node" cx="86" cy="139" r="5"/>
+              <circle class="dot-node" cx="134" cy="139" r="5"/>
+            </svg>
+          </div>
+
+          <div class="spec-wrap">
+            <table class="spectable">
+              <tbody>
+                <tr><th>분류</th><td>자율주행 AED 로봇 (Autonomous AED Robot)</td></tr>
+                <tr><th>환자 감지</th><td>ST-GCN 기반 자세 인식 — 쓰러진 사람을 자동 판별</td></tr>
+                <tr><th>주행</th><td>안전 기반 자율주행 — 현장까지 스스로 이동</td></tr>
+                <tr><th>의료 연계</th><td>실시간 원격 의료진 연결 및 처치 안내</td></tr>
+                <tr><th>환자 모니터링</th><td>AI 센싱 — 환자 상태 실시간 측정 · 확인</td></tr>
+                <tr><th>현장 통제</th><td>지향성 스피커 · 레이저 기반 군중 통제</td></tr>
+                <tr><th>탑재 장비</th><td>자동심장충격기(AED)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="combo-sec">
+            <p class="eyebrow muted">Specifications</p>
+            <h2 class="section-title">물리 제원</h2>
+            <p class="lead">아래 수치는 확정 후 업데이트될 예정입니다.</p>
+            <div class="spec-wrap">
+              <table class="spectable">
+                <tbody>
+                  <tr><th>크기 (W×D×H)</th><td class="spec-na">추후 업데이트</td></tr>
+                  <tr><th>무게</th><td class="spec-na">추후 업데이트</td></tr>
+                  <tr><th>최고 주행 속도</th><td class="spec-na">추후 업데이트</td></tr>
+                  <tr><th>배터리 · 구동 시간</th><td class="spec-na">추후 업데이트</td></tr>
+                  <tr><th>통신</th><td class="spec-na">추후 업데이트</td></tr>
+                  <tr><th>센서 구성</th><td class="spec-na">추후 업데이트</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="view" id="view-howitworks">
+      <div class="view-inner">
+        <div class="wrap">
+          <button class="backbtn" data-view="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            메인으로
+          </button>
+          <p class="eyebrow muted">How It Works</p>
+          <h2 class="section-title">감지부터 현장 통제까지, 한 대로.</h2>
+          <p class="lead">응급 상황이 인식된 순간부터 Beat이 수행하는 네 단계입니다.</p>
+
+          <div class="functions">
+            <div class="fn">
+              <div class="fn-viz" aria-hidden="true">
+                <svg viewBox="0 0 130 90">
+                  <g class="ln-acc">
+                    <path d="M6 22V10h11"/><path d="M124 22V10h-11"/>
+                    <path d="M6 68v12h11"/><path d="M124 68v12h-11"/>
+                  </g>
+                  <g class="ln">
+                    <line x1="23" y1="54" x2="30" y2="52"/>
+                    <line x1="30" y1="52" x2="48" y2="50"/>
+                    <line x1="48" y1="50" x2="68" y2="52"/>
+                    <line x1="30" y1="52" x2="34" y2="36"/>
+                    <line x1="34" y1="36" x2="28" y2="26"/>
+                    <line x1="30" y1="52" x2="36" y2="66"/>
+                    <line x1="36" y1="66" x2="32" y2="78"/>
+                    <line x1="68" y1="52" x2="88" y2="42"/>
+                    <line x1="88" y1="42" x2="104" y2="34"/>
+                    <line x1="68" y1="52" x2="90" y2="62"/>
+                    <line x1="90" y1="62" x2="106" y2="70"/>
+                  </g>
+                  <circle class="ln fill-ground" cx="18" cy="54" r="6"/>
+                  <circle class="dot-acc" cx="30" cy="52" r="3"/>
+                  <circle class="dot-acc" cx="48" cy="50" r="3"/>
+                  <circle class="dot-acc" cx="68" cy="52" r="3"/>
+                  <circle class="dot-node" cx="34" cy="36" r="2.6"/>
+                  <circle class="dot-node" cx="28" cy="26" r="2.6"/>
+                  <circle class="dot-node" cx="36" cy="66" r="2.6"/>
+                  <circle class="dot-node" cx="32" cy="78" r="2.6"/>
+                  <circle class="dot-node" cx="88" cy="42" r="2.6"/>
+                  <circle class="dot-node" cx="104" cy="34" r="2.6"/>
+                  <circle class="dot-node" cx="90" cy="62" r="2.6"/>
+                  <circle class="dot-node" cx="106" cy="70" r="2.6"/>
+                </svg>
+              </div>
+              <span class="fn-num">01 — 감지</span>
+              <p class="fn-title">쓰러진 사람을 스스로 판단</p>
+              <p class="fn-desc">ST-GCN 기반 자세 인식으로 응급환자를 식별하고, 즉시 AED 로봇이 출동합니다.</p>
+              <span class="fn-tag">ST-GCN</span>
+            </div>
+            <div class="fn">
+              <div class="fn-viz" aria-hidden="true">
+                <svg viewBox="0 0 130 90">
+                  <rect class="ln fill-ground" x="12" y="42" width="42" height="30" rx="7"/>
+                  <rect class="ln-acc" x="19" y="49" width="28" height="12" rx="2"/>
+                  <line class="ln" x1="22" y1="72" x2="22" y2="78"/>
+                  <line class="ln" x1="44" y1="72" x2="44" y2="78"/>
+                  <circle class="dot-node" cx="22" cy="80" r="3"/>
+                  <circle class="dot-node" cx="44" cy="80" r="3"/>
+                  <line class="ln" x1="33" y1="42" x2="33" y2="34"/>
+                  <circle class="dot-acc" cx="33" cy="32" r="2.6"/>
+                  <g class="ln-acc">
+                    <path d="M60 40a13 13 0 0 1 0 20"/>
+                    <path d="M66 34a21 21 0 0 1 0 32"/>
+                  </g>
+                  <rect class="ln fill-ground" x="84" y="22" width="34" height="34" rx="7"/>
+                  <line class="ln-acc" x1="101" y1="30" x2="101" y2="48"/>
+                  <line class="ln-acc" x1="92" y1="39" x2="110" y2="39"/>
+                </svg>
+              </div>
+              <span class="fn-num">02 — 연계</span>
+              <p class="fn-title">출동과 동시에 원격 의료</p>
+              <p class="fn-desc">현장으로 이동하는 그 순간부터 실시간 원격 의료진과 연결해 처치를 안내합니다.</p>
+              <span class="fn-tag">Real-time Telehealth</span>
+            </div>
+            <div class="fn">
+              <div class="fn-viz" aria-hidden="true">
+                <svg viewBox="0 0 130 90">
+                  <g class="ln-soft">
+                    <path d="M40 30a26 26 0 0 0 0 34"/>
+                    <path d="M30 22a38 38 0 0 0 0 50"/>
+                    <path d="M90 30a26 26 0 0 1 0 34"/>
+                    <path d="M100 22a38 38 0 0 1 0 50"/>
+                  </g>
+                  <path class="ln-acc" d="M65 66C50 54 42 46 42 37c0-7 5-11 11-11 5 0 9 3 12 7 3-4 7-7 12-7 6 0 11 4 11 11 0 9-8 17-23 29z"/>
+                  <path class="ln" d="M46 46h8l3-8 5 16 3-8h12"/>
+                </svg>
+              </div>
+              <span class="fn-num">03 — 센싱</span>
+              <p class="fn-title">환자 상태를 실시간 측정</p>
+              <p class="fn-desc">AI 센싱으로 환자의 상태를 지속적으로 측정하고 확인해 정확한 판단을 돕습니다.</p>
+              <span class="fn-tag">AI Sensing</span>
+            </div>
+            <div class="fn">
+              <div class="fn-viz" aria-hidden="true">
+                <svg viewBox="0 0 130 90">
+                  <path class="ln fill-ground" d="M12 38h9l13-10v34l-13-10h-9z"/>
+                  <g class="ln-acc">
+                    <line x1="40" y1="30" x2="96" y2="20"/>
+                    <line x1="40" y1="45" x2="100" y2="45"/>
+                    <line x1="40" y1="60" x2="96" y2="70"/>
+                  </g>
+                  <line class="ln-acc" x1="106" y1="12" x2="106" y2="78" stroke-dasharray="4 5"/>
+                  <g class="ln">
+                    <circle cx="118" cy="30" r="4"/>
+                    <line x1="118" y1="34" x2="118" y2="48"/>
+                    <circle cx="118" cy="58" r="4"/>
+                    <line x1="118" y1="62" x2="118" y2="76"/>
+                  </g>
+                </svg>
+              </div>
+              <span class="fn-num">04 — 통제</span>
+              <p class="fn-title">현장을 안전하게 정리</p>
+              <p class="fn-desc">지향성 스피커와 레이저로 군중을 통제해 처치 공간을 확보합니다.</p>
+              <span class="fn-tag">Directional Audio · Laser</span>
+            </div>
+          </div>
+
+          <div class="closing">
+            <p class="eyebrow">Every second counts</p>
+            <h2>1초라도 먼저, Beat이 도착합니다.</h2>
+            <p>AED를 찾는 시간을 0으로. 사람을 향해 달려가는 응급 로보틱스.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="sitefoot">
+    <span class="pulse-dot" aria-hidden="true"></span>
+    <span>Beat · Autonomous AED Robot</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var VIEWS = ['home', 'problem', 'product', 'howitworks'];
+
+  /* ---------- view router ---------- */
+  function show(name) {
+    if (VIEWS.indexOf(name) === -1) name = 'home';
+    document.querySelectorAll('.view').forEach(function (v) {
+      v.classList.toggle('active', v.id === 'view-' + name);
+    });
+    document.querySelectorAll('.navbtn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.view === name);
+    });
+    if (location.hash.replace('#', '') !== name) {
+      location.hash = name === 'home' ? '' : name;
+    }
+    window.scrollTo(0, 0);
+    if (name === 'home' && window._ecgResize) window._ecgResize();
+  }
+
+  document.querySelectorAll('[data-view]').forEach(function (el) {
+    el.addEventListener('click', function () { show(this.dataset.view); });
+  });
+  window.addEventListener('hashchange', function () {
+    show(location.hash.replace('#', '') || 'home');
+  });
+
+  /* ---------- ECG waveform on canvas ---------- */
+  var canvas = document.querySelector('.ecg');
+  if (canvas) {
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var accent = '#E11D2E';
+    var w, h;
+
+    function resize() {
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      if (!w || !h) return;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window._ecgResize = resize;
+    resize();
+    window.addEventListener('resize', resize);
+
+    function beat(t) {
+      var y = 0;
+      function bump(center, width, amp) {
+        var d = (t - center) / width;
+        return amp * Math.exp(-d * d);
+      }
+      y += bump(0.20, 0.012, 0.12);
+      y -= bump(0.30, 0.006, 0.18);
+      y += bump(0.33, 0.010, 1.00);
+      y -= bump(0.37, 0.010, 0.32);
+      y += bump(0.55, 0.030, 0.26);
+      return y;
+    }
+
+    var phase = 0;
+
+    function draw() {
+      if (w && h) {
+        var mid = h * 0.55;
+        var amp = h * 0.38;
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(23,25,30,0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, mid);
+        ctx.lineTo(w, mid);
+        ctx.stroke();
+
+        var cyclesAcross = 2.4;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        var headX = 0, headY = mid;
+        ctx.beginPath();
+        for (var x = 0; x <= w; x++) {
+          var pos = (x / w) * cyclesAcross + phase;
+          var frac = pos - Math.floor(pos);
+          var y = mid - beat(frac) * amp;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          headX = x; headY = y;
+        }
+        var grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(225,29,46,0.12)');
+        grad.addColorStop(0.65, 'rgba(225,29,46,0.85)');
+        grad.addColorStop(1, accent);
+        ctx.strokeStyle = grad;
+        ctx.stroke();
+
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(headX, headY, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (!reduce) {
+        phase += 0.0028;
+        requestAnimationFrame(draw);
+      }
+    }
+    draw();
+  }
+
+  /* ---------- initial view from hash ---------- */
+  show(location.hash.replace('#', '') || 'home');
+})();
+</script>
+
+</body>
+</html>
